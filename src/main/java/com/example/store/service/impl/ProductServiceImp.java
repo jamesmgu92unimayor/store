@@ -12,6 +12,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +47,7 @@ public class ProductServiceImp implements ProductService {
         ProductEntity entity = productRequestDtoToEntity.apply(dto);
 
         entity.setDateTime(LocalDateTime.now(ZoneId.of(TIME_ZONE)));
+        entity.setAmount(0);
         return convert(repository.save(entity));
     }
 
@@ -89,7 +91,15 @@ public class ProductServiceImp implements ProductService {
     @Override
     @Transactional
     public void increaseQuantity(UUID id, Integer amount) {
-        jdbcTemplate.update(CALL_INCREASE_QUANTITY, id, amount);
+        if(repository.findById(id).isEmpty())
+            throw new ModelNotFoundException(EXCEPTION_MODEL_NOTFOUND);
+
+        jdbcTemplate.execute(CALL_INCREASE_QUANTITY, (PreparedStatementCallback<Object>) preparedStatement -> {
+            preparedStatement.setObject(1, id);
+            preparedStatement.setInt(2, amount);
+            preparedStatement.execute();
+            return null;
+        });
     }
 
     @Override
@@ -98,10 +108,15 @@ public class ProductServiceImp implements ProductService {
         ProductEntity entity = repository.findById(id)
                 .orElseThrow(() -> new ModelNotFoundException(EXCEPTION_MODEL_NOTFOUND));
 
-        if(amount> entity.getAmount())
+        if (amount > entity.getAmount())
             throw new BusinessLogicException(EXCEPTION_MODEL_AMOUNT);
 
-        jdbcTemplate.update(CALL_DECREASE_QUANTITY, id, amount);
+        jdbcTemplate.execute(CALL_DECREASE_QUANTITY, (PreparedStatementCallback<Object>) preparedStatement -> {
+            preparedStatement.setObject(1, id);
+            preparedStatement.setInt(2, amount);
+            preparedStatement.execute();
+            return null;
+        });
     }
 
 }
