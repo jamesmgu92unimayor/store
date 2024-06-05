@@ -1,6 +1,11 @@
 package com.example.store.config;
 
 import com.example.store.repository.UserRepository;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +18,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Arrays;
 
 @Configuration
 @RequiredArgsConstructor
@@ -48,6 +55,28 @@ public class AppConfig {
     public UserDetailsService userDetailService() {
         return username -> userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
+
+    @Bean
+    public OpenAPI customOpenAPI(){
+        return new OpenAPI()
+                .components(new Components().addSecuritySchemes("bearer-jwt",
+                        new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                ))
+                .servers(
+                        Arrays.asList(
+                                new Server().url("http://localhost:8085").description("Servidor de Desarrollo")
+                        )
+                )
+                .info(
+                        new Info()
+                                .title("Store Example ")
+                                .version("0.1")
+                                .description("Api spring boot 3 con swagger")
+                );
     }
 
 }
