@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.stereotype.Service;
@@ -55,7 +56,7 @@ public class ProductServiceImp implements ProductService {
     @Transactional
     public ProductDto update(ProductRequestDto dto, UUID id) {
         ProductEntity entity = repository.findById(id)
-                .orElseThrow(() -> new ModelNotFoundException(EXCEPTION_MODEL_NOTFOUND));
+                .orElseThrow(() -> new ModelNotFoundException(HttpStatus.NOT_FOUND, "E02", EXCEPTION_MODEL_NOTFOUND));
 
         BeanUtils.copyProperties(dto, entity, "id", "dateTime", "amount");
         return convert(repository.save(entity));
@@ -64,7 +65,7 @@ public class ProductServiceImp implements ProductService {
     @Override
     public ProductDto getById(UUID id) {
         ProductEntity entity = repository.findById(id)
-                .orElseThrow(() -> new ModelNotFoundException(EXCEPTION_MODEL_NOTFOUND));
+                .orElseThrow(() -> new ModelNotFoundException(HttpStatus.NOT_FOUND, "E02", EXCEPTION_MODEL_NOTFOUND));
 
         return convert(entity);
     }
@@ -73,7 +74,7 @@ public class ProductServiceImp implements ProductService {
     @Transactional
     public void delete(UUID id) {
         ProductEntity entity = repository.findById(id).orElseThrow(() ->
-                new ModelNotFoundException(EXCEPTION_MODEL_NOTFOUND));
+                new ModelNotFoundException(HttpStatus.NOT_FOUND, "E02", EXCEPTION_MODEL_NOTFOUND));
 
         repository.deleteById(entity.getId());
     }
@@ -91,8 +92,8 @@ public class ProductServiceImp implements ProductService {
     @Override
     @Transactional
     public void increaseQuantity(UUID id, Integer amount) {
-        if(repository.findById(id).isEmpty())
-            throw new ModelNotFoundException(EXCEPTION_MODEL_NOTFOUND);
+        if (repository.findById(id).isEmpty())
+            throw new ModelNotFoundException(HttpStatus.NOT_FOUND, "E02", EXCEPTION_MODEL_NOTFOUND);
 
         jdbcTemplate.execute(CALL_INCREASE_QUANTITY, (PreparedStatementCallback<Object>) preparedStatement -> {
             preparedStatement.setObject(1, id);
@@ -106,10 +107,10 @@ public class ProductServiceImp implements ProductService {
     @Transactional
     public void decreaseQuantity(UUID id, Integer amount) {
         ProductEntity entity = repository.findById(id)
-                .orElseThrow(() -> new ModelNotFoundException(EXCEPTION_MODEL_NOTFOUND));
+                .orElseThrow(() -> new ModelNotFoundException(HttpStatus.NOT_FOUND, "E02", EXCEPTION_MODEL_NOTFOUND));
 
         if (amount > entity.getAmount())
-            throw new BusinessLogicException(EXCEPTION_MODEL_AMOUNT);
+            throw new BusinessLogicException(HttpStatus.PRECONDITION_REQUIRED, "E01", EXCEPTION_MODEL_AMOUNT);
 
         jdbcTemplate.execute(CALL_DECREASE_QUANTITY, (PreparedStatementCallback<Object>) preparedStatement -> {
             preparedStatement.setObject(1, id);

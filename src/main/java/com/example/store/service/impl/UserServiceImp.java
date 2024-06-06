@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -46,10 +47,10 @@ public class UserServiceImp implements UserService {
     @Transactional
     public UserDto update(UserDto userDto, UUID id) {
         UserEntity user = repository.findById(id).orElseThrow(() ->
-                new ModelNotFoundException(EXCEPTION_MODEL_USER_INVALID));
+                new ModelNotFoundException(HttpStatus.NOT_FOUND, "E02", EXCEPTION_MODEL_USER_INVALID));
 
         if (repository.existsByEmailAndUser(userDto.getEmail(), id)) {
-            throw new BusinessLogicException(EXCEPTION_MODEL_EMAIL);
+            throw new BusinessLogicException(HttpStatus.PRECONDITION_FAILED, "E01", EXCEPTION_MODEL_EMAIL);
         }
 
         user.setName(userDto.getName());
@@ -61,7 +62,7 @@ public class UserServiceImp implements UserService {
     @Override
     public UserDto getById(UUID id) {
         UserEntity user = repository.findById(id).orElseThrow(() ->
-                new ModelNotFoundException(EXCEPTION_MODEL_USER_INVALID));
+                new ModelNotFoundException(HttpStatus.NOT_FOUND, "E02", EXCEPTION_MODEL_USER_INVALID));
 
         return userToDto.apply(user);
     }
@@ -75,7 +76,7 @@ public class UserServiceImp implements UserService {
     @Transactional
     public void delete(UUID id) {
         UserEntity user = repository.findById(id).orElseThrow(() ->
-                new ModelNotFoundException(EXCEPTION_MODEL_USER_INVALID));
+                new ModelNotFoundException(HttpStatus.NOT_FOUND, "E02", EXCEPTION_MODEL_USER_INVALID));
 
         repository.deleteById(user.getId());
     }
@@ -87,7 +88,7 @@ public class UserServiceImp implements UserService {
 
     private void checkIfExistEmail(String email) {
         if (repository.existsByEmail(email)) {
-            throw new BusinessLogicException(EXCEPTION_MODEL_EMAIL);
+            throw new BusinessLogicException(HttpStatus.PRECONDITION_FAILED, "E01", EXCEPTION_MODEL_EMAIL);
         }
     }
 
